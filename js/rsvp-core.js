@@ -1,19 +1,19 @@
-// Constantes globales
+// Global Constants
 const PARAGRAPH_TOKEN = "___PB___";
 
 /**
- * Procesa el texto raw y devuelve un array de palabras con tokens de párrafo.
+ * Parses raw text and returns an array of words with paragraph tokens.
  */
 function parseText(rawText) {
     if (!rawText) return [];
-    // Reemplazar saltos de línea (simples o dobles) con tokens
-    const textWithTokens = rawText.replace(/\n\s*\n/g, ` ${PARAGRAPH_TOKEN} `) // Doble enter
-                                  .replace(/\n/g, ` ${PARAGRAPH_TOKEN} `);    // Simple enter (opcional, ajusta según gusto)
+    // Replace line breaks (double or single) with tokens
+    const textWithTokens = rawText.replace(/\n\s*\n/g, ` ${PARAGRAPH_TOKEN} `) // Double enter
+                                  .replace(/\n/g, ` ${PARAGRAPH_TOKEN} `);    // Single enter
     return textWithTokens.split(/\s+/).filter(w => w.length > 0);
 }
 
 /**
- * Renderiza una palabra en el contenedor usando lógica de pivote.
+ * Renders a word in the container using pivot logic.
  */
 function renderWord(rawWord, outputElement) {
     if (!outputElement) return;
@@ -23,6 +23,7 @@ function renderWord(rawWord, outputElement) {
         return;
     }
 
+    // Regex to separate punctuation from the word core (supports international characters)
     const regex = /^([^\wáéíóúÁÉÍÓÚñÑüÜ]*)([\wáéíóúÁÉÍÓÚñÑüÜ\-\']+)([^\wáéíóúÁÉÍÓÚñÑüÜ]*)$/;
     const match = rawWord.match(regex);
     let prefix = "", core = rawWord, suffix = "";
@@ -54,7 +55,7 @@ function renderWord(rawWord, outputElement) {
 }
 
 /**
- * Muestra un mensaje temporal (toast).
+ * Shows a temporary toast message.
  */
 let toastTimer;
 function showToast(msg, toastElement) {

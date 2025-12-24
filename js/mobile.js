@@ -1,4 +1,4 @@
-// --- Estado ---
+// --- State ---
 let words = [];
 let currentIndex = 0;
 let isPlaying = false;
@@ -9,7 +9,7 @@ let lastTapTime = 0;
 let tapCount = 0;
 let tapTimeout = null;
 
-// --- Elementos DOM ---
+// --- DOM Elements ---
 const inputText = document.getElementById('inputText');
 const wordOutput = document.getElementById('wordOutput');
 const btnToggle = document.getElementById('btnToggle');
@@ -28,18 +28,18 @@ const feedbackRight = document.getElementById('feedbackRight');
 
 // --- Init ---
 window.addEventListener('DOMContentLoaded', () => { 
-    renderWord("Listo", wordOutput); 
+    renderWord("Ready", wordOutput); 
     updateDisplays();
 });
 
 function initData() {
     const rawText = inputText.value.trim();
-    if (!rawText) { alert("Por favor ingresa un texto."); return false; }
+    if (!rawText) { alert("Please enter some text."); return false; }
     words = parseText(rawText);
     return true;
 }
 
-// --- Velocidad ---
+// --- Speed ---
 window.changeSpeedGlobal = function(delta) {
     currentWpm += delta;
     if (currentWpm < 60) currentWpm = 60;
@@ -53,11 +53,11 @@ function updateDisplays() {
     fsWpmDisplay.textContent = currentWpm;
 }
 
-// --- Motor RSVP ---
+// --- RSVP Engine ---
 function startReader() {
     if (words.length === 0) { if (!initData()) return; }
     if (currentIndex >= words.length) currentIndex = 0;
-    isPlaying = true; btnToggle.textContent = "Pausa";
+    isPlaying = true; btnToggle.textContent = "Pause";
     if (isContextOpen) toggleContextView();
     loopReader();
 }
@@ -86,7 +86,7 @@ function loopReader() {
 }
 
 function pauseReader() {
-    isPlaying = false; clearTimeout(timerOut); btnToggle.textContent = "Continuar";
+    isPlaying = false; clearTimeout(timerOut); btnToggle.textContent = "Continue";
 }
 
 function togglePlayPause() {
@@ -96,10 +96,10 @@ function togglePlayPause() {
 
 function resetReader() {
     pauseReader(); currentIndex = 0; words = []; 
-    btnToggle.textContent = "Iniciar"; renderWord("Listo", wordOutput);
+    btnToggle.textContent = "Start"; renderWord("Ready", wordOutput);
 }
 
-// --- Navegación y Feedback ---
+// --- Navigation & Feedback ---
 function flashFeedback(side) {
     const el = side === 'left' ? feedbackLeft : feedbackRight;
     el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 300);
@@ -122,13 +122,13 @@ function skipParagraphPrev() {
     if (words[newIndex] === PARAGRAPH_TOKEN) newIndex++;
     currentIndex = newIndex;
     renderWord(words[currentIndex], wordOutput);
-    showToast("⏮ Inicio Párrafo", toast);
+    showToast("⏮ Paragraph Start", toast);
     flashFeedback('left');
 }
 
-// --- Gestos Táctiles ---
+// --- Touch Gestures ---
 readerDisplay.addEventListener('touchend', (e) => {
-    // Ignorar toques en toolbar, botones o contexto
+    // Ignore touches on toolbar, buttons or context overlay
     if (e.target.closest('#mobile-fs-toolbar') || e.target.tagName === 'BUTTON' || e.target.closest('#context-overlay')) return;
 
     const now = Date.now();
@@ -142,7 +142,7 @@ readerDisplay.addEventListener('touchend', (e) => {
     if (x < width * 0.25) zone = 'left';
     else if (x > width * 0.75) zone = 'right';
 
-    // Zona segura central
+    // Safe Center Zone
     if (zone === 'center') {
         const yRatio = y / height;
         if (yRatio < 0.25 || yRatio > 0.75) return; 
@@ -169,7 +169,7 @@ readerDisplay.addEventListener('touchend', (e) => {
     e.preventDefault();
 });
 
-// --- Fullscreen & Orientación ---
+// --- Fullscreen & Orientation ---
 async function toggleFullscreen() {
     if (!document.fullscreenElement) {
         try {
@@ -202,7 +202,7 @@ function toggleContextView() {
     
     if (isContextOpen) {
         pauseReader();
-        contextOverlay.innerHTML = '<button class="close-ctx-btn">Cerrar X</button>';
+        contextOverlay.innerHTML = '<button class="close-ctx-btn">Close X</button>';
         contextOverlay.querySelector('.close-ctx-btn').onclick = toggleContextView;
         
         words.forEach((word, index) => {

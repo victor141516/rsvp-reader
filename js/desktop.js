@@ -1,11 +1,11 @@
-// --- Estado ---
+// --- State ---
 let words = [];
 let currentIndex = 0;
 let isPlaying = false;
 let timerOut = null;
 let isContextOpen = false;
 
-// --- Elementos DOM ---
+// --- DOM Elements ---
 const inputText = document.getElementById('inputText');
 const wordOutput = document.getElementById('wordOutput');
 const btnToggle = document.getElementById('btnToggle');
@@ -18,21 +18,21 @@ const toast = document.getElementById('toast');
 const contextOverlay = document.getElementById('context-overlay');
 
 // --- Init ---
-window.addEventListener('DOMContentLoaded', () => { renderWord("Listo", wordOutput); });
+window.addEventListener('DOMContentLoaded', () => { renderWord("Ready", wordOutput); });
 
 function initData() {
     const rawText = inputText.value.trim();
-    if (!rawText) { alert("Por favor ingresa un texto."); return false; }
+    if (!rawText) { alert("Please enter some text."); return false; }
     words = parseText(rawText);
     return true;
 }
 
-// --- Motor RSVP ---
+// --- RSVP Engine ---
 function startReader() {
     if (words.length === 0) { if (!initData()) return; }
     if (currentIndex >= words.length) currentIndex = 0;
     isPlaying = true;
-    btnToggle.textContent = "Pausa";
+    btnToggle.textContent = "Pause";
     if (isContextOpen) toggleContextView();
     loopReader();
 }
@@ -61,7 +61,7 @@ function loopReader() {
 }
 
 function pauseReader() {
-    isPlaying = false; clearTimeout(timerOut); btnToggle.textContent = "Continuar";
+    isPlaying = false; clearTimeout(timerOut); btnToggle.textContent = "Continue";
 }
 
 function togglePlayPause() {
@@ -71,16 +71,16 @@ function togglePlayPause() {
 
 function resetReader() {
     pauseReader(); currentIndex = 0; words = []; 
-    btnToggle.textContent = "Iniciar"; renderWord("Listo", wordOutput);
+    btnToggle.textContent = "Start"; renderWord("Ready", wordOutput);
 }
 
-// --- Funciones UI ---
+// --- UI Functions ---
 function changeSpeed(delta) {
     let current = parseInt(wpmInput.value) || 300;
     let newVal = current + delta;
     if (newVal < 60) newVal = 60; 
     wpmInput.value = newVal; 
-    showToast(`Velocidad: ${newVal} WPM`, toast);
+    showToast(`Speed: ${newVal} WPM`, toast);
 }
 
 function skipWords(direction) {
@@ -111,7 +111,7 @@ function skipParagraph(direction) {
     if (newIndex < 0) newIndex = 0;
     currentIndex = newIndex; 
     renderWord(words[currentIndex], wordOutput); 
-    showToast(direction === 'prev' ? "Inicio Párrafo Ant." : "Inicio Párrafo Sig.", toast);
+    showToast(direction === 'prev' ? "Prev Paragraph Start" : "Next Paragraph Start", toast);
 }
 
 function toggleContextView() {
@@ -132,7 +132,7 @@ function toggleContextView() {
                 }
                 span.onclick = () => { 
                     currentIndex = index; renderWord(words[currentIndex], wordOutput); 
-                    showToast("Salto a posición", toast); toggleContextView(); 
+                    showToast("Jump to position", toast); toggleContextView(); 
                 };
                 contextOverlay.appendChild(span);
             }
