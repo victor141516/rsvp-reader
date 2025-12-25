@@ -26,7 +26,6 @@ const btnFsContext = document.getElementById('btnFsContext');
 const feedbackLeft = document.getElementById('feedbackLeft');
 const feedbackRight = document.getElementById('feedbackRight');
 
-// --- Init ---
 window.addEventListener('DOMContentLoaded', () => { 
     renderWord("Ready", wordOutput); 
     updateDisplays();
@@ -35,11 +34,10 @@ window.addEventListener('DOMContentLoaded', () => {
 function initData() {
     const rawText = inputText.value.trim();
     if (!rawText) { alert("Please enter some text."); return false; }
-    words = parseText(rawText);
+    words = parseContent(rawText);
     return true;
 }
 
-// --- Speed ---
 window.changeSpeedGlobal = function(delta) {
     currentWpm += delta;
     if (currentWpm < 60) currentWpm = 60;
@@ -53,7 +51,6 @@ function updateDisplays() {
     fsWpmDisplay.textContent = currentWpm;
 }
 
-// --- RSVP Engine ---
 function startReader() {
     if (words.length === 0) { if (!initData()) return; }
     if (currentIndex >= words.length) currentIndex = 0;
@@ -66,19 +63,20 @@ function loopReader() {
     if (!isPlaying) return;
     if (currentIndex >= words.length) { pauseReader(); currentIndex = 0; return; }
 
-    const currentWord = words[currentIndex];
-    renderWord(currentWord, wordOutput);
+    const currentWordObj = words[currentIndex];
+    renderWord(currentWordObj, wordOutput);
 
     const baseDelay = 60000 / currentWpm;
     let finalDelay = baseDelay;
 
-    if (currentWord === PARAGRAPH_TOKEN) {
+    if (currentWordObj.type === 'break') {
         finalDelay = baseDelay * 4.5;
     } else {
-        const lastChar = currentWord.slice(-1);
+        const text = currentWordObj.text;
+        const lastChar = text.slice(-1);
         if (',;'.includes(lastChar)) finalDelay = baseDelay * 2.0; 
         else if ('.?!:”。'.includes(lastChar)) finalDelay = baseDelay * 3.2;
-        else if (currentWord.length > 10) finalDelay = baseDelay * 1.2;
+        else if (text.length > 10) finalDelay = baseDelay * 1.2;
     }
 
     currentIndex++;
@@ -99,7 +97,6 @@ function resetReader() {
     btnToggle.textContent = "Start"; renderWord("Ready", wordOutput);
 }
 
-// --- Navigation & Feedback ---
 function flashFeedback(side) {
     const el = side === 'left' ? feedbackLeft : feedbackRight;
     el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 300);
@@ -118,17 +115,16 @@ function skipWords(direction) {
 function skipParagraphPrev() {
     if (words.length === 0) return;
     let newIndex = Math.max(0, currentIndex - 2);
-    while (newIndex > 0 && words[newIndex] !== PARAGRAPH_TOKEN) newIndex--;
-    if (words[newIndex] === PARAGRAPH_TOKEN) newIndex++;
+    while (newIndex > 0 && words[newIndex].type !== 'break') newIndex--;
+    if (words[newIndex].type === 'break') newIndex++;
+    
     currentIndex = newIndex;
     renderWord(words[currentIndex], wordOutput);
     showToast("⏮ Paragraph Start", toast);
     flashFeedback('left');
 }
 
-// --- Touch Gestures ---
 readerDisplay.addEventListener('touchend', (e) => {
-    // Ignore touches on toolbar, buttons or context overlay
     if (e.target.closest('#mobile-fs-toolbar') || e.target.tagName === 'BUTTON' || e.target.closest('#context-overlay')) return;
 
     const now = Date.now();
@@ -142,7 +138,6 @@ readerDisplay.addEventListener('touchend', (e) => {
     if (x < width * 0.25) zone = 'left';
     else if (x > width * 0.75) zone = 'right';
 
-    // Safe Center Zone
     if (zone === 'center') {
         const yRatio = y / height;
         if (yRatio < 0.25 || yRatio > 0.75) return; 
@@ -169,7 +164,6 @@ readerDisplay.addEventListener('touchend', (e) => {
     e.preventDefault();
 });
 
-// --- Fullscreen & Orientation ---
 async function toggleFullscreen() {
     if (!document.fullscreenElement) {
         try {
@@ -195,7 +189,6 @@ document.addEventListener('fullscreenchange', () => {
 btnFullscreen.addEventListener('click', toggleFullscreen);
 btnFsExit.addEventListener('click', toggleFullscreen);
 
-// --- Context Overlay ---
 function toggleContextView() {
     if (words.length === 0 && !initData()) return;
     isContextOpen = !isContextOpen;
@@ -205,14 +198,28 @@ function toggleContextView() {
         contextOverlay.innerHTML = '<button class="close-ctx-btn">Close X</button>';
         contextOverlay.querySelector('.close-ctx-btn').onclick = toggleContextView;
         
-        words.forEach((word, index) => {
-            if (word === PARAGRAPH_TOKEN) { 
+        words.forEach((wordObj, index) => {
+            if (wordObj.type === 'break') { 
                 contextOverlay.appendChild(document.createElement('div')).className = 'ctx-break'; 
             } else {
                 const span = document.createElement('span'); 
-                span.textContent = word + " "; 
+                span.textContent = wordObj.text + " "; 
                 span.className = 'ctx-word';
-                if (index === currentIndex || (index > 0 && index - 1 === currentIndex)) {
+                
+                if (wordObj.bold) span.style.fontWeight = 'bold';
+                if (wordObj.italic) span.style.fontStyle = 'italic';
+                if (wordObj.header) { 
+                    span.style.fontWeight = 'bold'; 
+                    span.style.color = '#2a9d8f';
+                    span.style.display = 'inline-block';
+                    if (wordObj.headerLevel === 1) { 
+                        span.style.fontSize = '1.6em'; span.style.color = '#e76f51'; span.style.marginTop = '10px';
+                    } else if (wordObj.headerLevel === 2) {
+                        span.style.fontSize = '1.3em'; span.style.marginTop = '8px';
+                    }
+                }
+
+                if (index > 0 && index - 1 === currentIndex) {
                     span.classList.add('current'); 
                     setTimeout(() => span.scrollIntoView({block: "center"}), 50);
                 }

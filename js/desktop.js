@@ -17,17 +17,15 @@ const wpmInput = document.getElementById('wpm');
 const toast = document.getElementById('toast');
 const contextOverlay = document.getElementById('context-overlay');
 
-// --- Init ---
 window.addEventListener('DOMContentLoaded', () => { renderWord("Ready", wordOutput); });
 
 function initData() {
     const rawText = inputText.value.trim();
     if (!rawText) { alert("Please enter some text."); return false; }
-    words = parseText(rawText);
+    words = parseContent(rawText);
     return true;
 }
 
-// --- RSVP Engine ---
 function startReader() {
     if (words.length === 0) { if (!initData()) return; }
     if (currentIndex >= words.length) currentIndex = 0;
@@ -41,17 +39,18 @@ function loopReader() {
     if (!isPlaying) return;
     if (currentIndex >= words.length) { pauseReader(); currentIndex = 0; return; }
 
-    const currentWord = words[currentIndex];
-    renderWord(currentWord, wordOutput);
+    const currentWordObj = words[currentIndex];
+    renderWord(currentWordObj, wordOutput);
 
     const wpm = parseInt(wpmInput.value) || 300;
     const baseDelay = 60000 / wpm;
     let finalDelay = baseDelay;
 
-    if (currentWord === PARAGRAPH_TOKEN) {
+    if (currentWordObj.type === 'break') {
         finalDelay = baseDelay * 4.0;
     } else {
-        const lastChar = currentWord.slice(-1);
+        const text = currentWordObj.text;
+        const lastChar = text.slice(-1);
         if (',;'.includes(lastChar)) finalDelay = baseDelay * 2.0; 
         else if ('.?!:”。'.includes(lastChar)) finalDelay = baseDelay * 3.0;
     }
@@ -74,7 +73,6 @@ function resetReader() {
     btnToggle.textContent = "Start"; renderWord("Ready", wordOutput);
 }
 
-// --- UI Functions ---
 function changeSpeed(delta) {
     let current = parseInt(wpmInput.value) || 300;
     let newVal = current + delta;
@@ -99,14 +97,16 @@ function skipWords(direction) {
 function skipParagraph(direction) {
     if (words.length === 0) return;
     let newIndex = currentIndex;
+    
     if (direction === 'prev') {
         newIndex = Math.max(0, newIndex - 2); 
-        while (newIndex > 0 && words[newIndex] !== PARAGRAPH_TOKEN) newIndex--;
-        if (words[newIndex] === PARAGRAPH_TOKEN) newIndex++;
+        while (newIndex > 0 && words[newIndex].type !== 'break') newIndex--;
+        if (words[newIndex].type === 'break') newIndex++;
     } else {
-        while (newIndex < words.length && words[newIndex] !== PARAGRAPH_TOKEN) newIndex++;
+        while (newIndex < words.length && words[newIndex].type !== 'break') newIndex++;
         if (newIndex < words.length) newIndex++;
     }
+    
     if (newIndex >= words.length) newIndex = words.length - 1; 
     if (newIndex < 0) newIndex = 0;
     currentIndex = newIndex; 
@@ -119,14 +119,30 @@ function toggleContextView() {
     isContextOpen = !isContextOpen;
     if (isContextOpen) {
         pauseReader(); contextOverlay.innerHTML = '';
-        words.forEach((word, index) => {
-            if (word === PARAGRAPH_TOKEN) {
+
+        words.forEach((wordObj, index) => {
+            if (wordObj.type === 'break') {
                 const br = document.createElement('div'); br.className = 'ctx-break'; 
                 contextOverlay.appendChild(br);
             } else {
                 const span = document.createElement('span'); 
-                span.textContent = word + " "; span.className = 'ctx-word';
-                if (index === currentIndex || (index === currentIndex - 1 && currentIndex > 0)) {
+                span.textContent = wordObj.text + " "; span.className = 'ctx-word';
+                
+                if (wordObj.bold) span.style.fontWeight = 'bold';
+                if (wordObj.italic) span.style.fontStyle = 'italic';
+                if (wordObj.header) { 
+                    span.style.fontWeight = 'bold'; 
+                    span.style.color = '#2a9d8f';
+                    span.style.display = 'inline-block';
+                    
+                    if (wordObj.headerLevel === 1) { 
+                        span.style.fontSize = '1.6em'; span.style.color = '#e76f51'; span.style.marginTop = '10px';
+                    } else if (wordObj.headerLevel === 2) {
+                        span.style.fontSize = '1.3em'; span.style.marginTop = '8px';
+                    }
+                }
+
+                if (index === currentIndex - 1 && currentIndex > 0) {
                     span.classList.add('current'); 
                     setTimeout(() => span.scrollIntoView({block: "center", behavior: "smooth"}), 50);
                 }
@@ -141,7 +157,6 @@ function toggleContextView() {
     } else { contextOverlay.classList.remove('active'); }
 }
 
-// --- Event Listeners ---
 document.addEventListener('keydown', (e) => {
     if (document.activeElement === inputText || document.activeElement === wpmInput) return;
     switch(e.code) {
