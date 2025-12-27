@@ -24,8 +24,8 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://alegrez.github.io/rsvp-reader/mobile.html">
 
-    <link rel="stylesheet" href="css/style.css?v=1766858599">
-    <link rel="stylesheet" href="css/mobile.css?v=1766858599">
+    <link rel="stylesheet" href="css/style.css?v=1766864183">
+    <link rel="stylesheet" href="css/mobile.css?v=1766864183">
 </head>
 <body>
 
@@ -105,6 +105,7 @@
             <div class="control-group">
                  <button id="btnFullscreen" class="fullscreen-btn">Fullscreen ⛶</button>
                  <button id="btnContext" class="context-btn" style="background-color: #457b9d;">View Text 📄</button>
+                 <button id="btnSettings" class="settings-btn" title="Settings">⚙️</button>
             </div>
         </div>
     </div>
@@ -144,14 +145,44 @@
         </a>
     </footer>
 
+    <div id="settings-overlay" class="settings-overlay">
+        <div class="settings-card">
+            <div class="settings-header">
+                <h2>Configuration</h2>
+                <button id="btnCloseSettings" class="close-settings-btn">×</button>
+            </div>
+            
+            <div class="setting-item">
+                <label for="fontSelect">Typeface / Fuente</label>
+                <select id="fontSelect">
+                    <option value="classic">Classic (Courier New)</option>
+                    <option value="opendyslexic">OpenDyslexic</option>
+                    <option value="system">System Default (Sans)</option>
+                    <option value="mono">Roboto Mono</option>
+                    <option value="serif">Merriweather (Serif)</option>
+                </select>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                <button id="btnFactoryReset" style="width: 100%; background-color: transparent; border: 1px solid #e76f51; color: #e76f51;">
+                    Restore Defaults
+                </button>
+            </div>
+            
+            <div style="text-align: right; margin-top: 20px;">
+                <button id="btnSaveSettings" style="width: 100%;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
     
-    <script src="js/rsvp-core.js?v=1766858599"></script>
-    <script src="js/epub-bridge.js?v=1766858599"></script>
-    <script src="js/storage.js?v=1766858599"></script>
-    <script src="js/mobile.js?v=1766858599"></script>
+    <script src="js/rsvp-core.js?v=1766864183"></script>
+    <script src="js/epub-bridge.js?v=1766864183"></script>
+    <script src="js/storage.js?v=1766864183"></script>
+    <script src="js/mobile.js?v=1766864183"></script>
 </body>
 </html>

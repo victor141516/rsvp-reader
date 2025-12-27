@@ -11,6 +11,7 @@ let currentMode = 'text';
 let currentBookMeta = null;
 let currentBookTitle = "Unknown Title";
 let currentBookAuthor = "";
+let isResetting = false;
 
 const inputText = document.getElementById('inputText');
 const wordOutput = document.getElementById('wordOutput');
@@ -45,6 +46,29 @@ const resumeInfo = document.getElementById('resume-info');
 const btnResume = document.getElementById('btnResume');
 const btnDeleteBook = document.getElementById('btnDeleteBook');
 
+const btnSettings = document.getElementById('btnSettings');
+const settingsOverlay = document.getElementById('settings-overlay');
+const btnCloseSettings = document.getElementById('btnCloseSettings');
+const btnSaveSettings = document.getElementById('btnSaveSettings');
+const fontSelect = document.getElementById('fontSelect');
+const btnFactoryReset = document.getElementById('btnFactoryReset');
+
+const fontMap = {
+    'classic': "'Courier New', Courier, monospace",
+    'system': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    'opendyslexic': '"OpenDyslexic", "Comic Sans MS", sans-serif',
+    'mono': '"Roboto Mono", monospace',
+    'serif': '"Merriweather", serif'
+};
+
+function applySettings(settings) {
+    const fontKey = settings.font || 'classic';
+    const fontFamily = fontMap[fontKey];
+    document.documentElement.style.setProperty('--font-family', fontFamily);
+    
+    if(fontSelect) fontSelect.value = fontKey;
+}
+
 window.addEventListener('DOMContentLoaded', async () => { 
     renderWord("Ready", wordOutput); 
     EpubBridge.init();
@@ -53,10 +77,51 @@ window.addEventListener('DOMContentLoaded', async () => {
     if(settings.wpm) {
         currentWpm = settings.wpm;
     }
+    
     updateDisplays();
+    applySettings(settings);
     
     await checkSavedBook();
 });
+
+if(btnSettings) {
+    btnSettings.addEventListener('click', () => {
+        settingsOverlay.classList.add('active');
+        if(isPlaying) togglePlayPause();
+    });
+}
+
+function closeSettings() {
+    settingsOverlay.classList.remove('active');
+}
+
+if(btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettings);
+if(btnSaveSettings) btnSaveSettings.addEventListener('click', closeSettings);
+
+if(fontSelect) {
+    fontSelect.addEventListener('change', (e) => {
+        const newFont = e.target.value;
+        
+        StorageService.saveSettings(currentWpm, currentMode, newFont);
+        
+        document.documentElement.style.setProperty('--font-family', fontMap[newFont]);
+    });
+}
+
+if(btnFactoryReset) {
+    btnFactoryReset.addEventListener('click', () => {
+        if(confirm("Are you sure you want to reset all settings to default?")) {
+            isResetting = true;
+            StorageService.clearSettings();
+            location.reload();
+        }
+    });
+}
+
+settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === settingsOverlay) closeSettings();
+});
+
 
 async function checkSavedBook() {
     const meta = await StorageService.getProgress();
@@ -187,11 +252,14 @@ function saveCurrentState() {
         const href = chapterSelect.value;
         StorageService.saveProgress(currentBookTitle, currentBookAuthor, href, currentIndex);
     }
-    StorageService.saveSettings(currentWpm, currentMode);
+    const currentFont = fontSelect ? fontSelect.value : 'system';
+    StorageService.saveSettings(currentWpm, currentMode, currentFont);
 }
 
 window.addEventListener('beforeunload', () => {
-    saveCurrentState();
+    if (!isResetting) {
+        saveCurrentState();
+    }
 });
 
 btnPrevChapter.addEventListener('click', () => {
@@ -354,7 +422,15 @@ readerDisplay.addEventListener('touchend', (e) => {
 
     if (zone === 'center') {
         const yRatio = y / height;
-        if (yRatio < 0.25 || yRatio > 0.75) return; 
+        if (yRatio < 0.20 || yRatio > 0.80) return; 
+    }
+
+    if (zone === 'center') {
+        clearTimeout(tapTimeout);
+        tapCount = 0;
+        togglePlayPause();
+        e.preventDefault();
+        return;
     }
 
     if (now - lastTapTime < 400) tapCount++;
@@ -365,13 +441,12 @@ readerDisplay.addEventListener('touchend', (e) => {
 
     if (tapCount === 1) {
         tapTimeout = setTimeout(() => {
-            if (zone === 'center') togglePlayPause();
             tapCount = 0;
         }, 400);
     } else if (tapCount === 2) {
         if (zone === 'left') skipWords('left');
         else if (zone === 'right') skipWords('right');
-        else togglePlayPause();
+        tapCount = 0;
     } else if (tapCount === 3) {
         if (zone === 'left') { skipParagraphPrev(); tapCount = 0; }
     }

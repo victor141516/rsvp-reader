@@ -53,13 +53,17 @@ const StorageService = {
     },
 
     
-    saveSettings(wpm, mode) {
-        const settings = { wpm, mode };
+    saveSettings(wpm, mode, font) {
+        const settings = { wpm, mode, font };
         localStorage.setItem(this.KEY_SETTINGS, JSON.stringify(settings));
+    },
+
+    clearSettings() {
+        localStorage.removeItem(this.KEY_SETTINGS);
     },
 
     getSettings() {
         const s = localStorage.getItem(this.KEY_SETTINGS);
-        return s ? JSON.parse(s) : { wpm: 300, mode: 'text' };
+        return s ? JSON.parse(s) : { wpm: 300, mode: 'text', font: 'classic' };
     }
 };

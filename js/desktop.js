@@ -7,6 +7,7 @@ let currentMode = 'text';
 let currentBookMeta = null;
 let currentBookTitle = "Unknown Title";
 let currentBookAuthor = "";
+let isResetting = false;
 
 const inputText = document.getElementById('inputText');
 const wordOutput = document.getElementById('wordOutput');
@@ -36,6 +37,30 @@ const resumeInfo = document.getElementById('resume-info');
 const btnResume = document.getElementById('btnResume');
 const btnDeleteBook = document.getElementById('btnDeleteBook');
 
+const btnSettings = document.getElementById('btnSettings');
+const settingsOverlay = document.getElementById('settings-overlay');
+const btnCloseSettings = document.getElementById('btnCloseSettings');
+const btnSaveSettings = document.getElementById('btnSaveSettings');
+const fontSelect = document.getElementById('fontSelect');
+const btnFactoryReset = document.getElementById('btnFactoryReset');
+
+const fontMap = {
+    'classic': "'Courier New', Courier, monospace",
+    'system': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    'opendyslexic': '"OpenDyslexic", "Comic Sans MS", sans-serif',
+    'mono': '"Roboto Mono", monospace',
+    'serif': '"Merriweather", serif'
+};
+
+function applySettings(settings) {
+    const fontKey = settings.font || 'classic'; 
+    const fontFamily = fontMap[fontKey];
+    
+    document.documentElement.style.setProperty('--font-family', fontFamily);
+    
+    if(fontSelect) fontSelect.value = fontKey;
+}
+
 window.addEventListener('DOMContentLoaded', async () => { 
     renderWord("Ready", wordOutput); 
     EpubBridge.init();
@@ -43,8 +68,51 @@ window.addEventListener('DOMContentLoaded', async () => {
     const settings = StorageService.getSettings();
     if(settings.wpm) wpmInput.value = settings.wpm;
     
+    applySettings(settings);
+    
     await checkSavedBook();
 });
+
+if(btnSettings) {
+    btnSettings.addEventListener('click', () => {
+        settingsOverlay.classList.add('active');
+        if(isPlaying) togglePlayPause();
+    });
+}
+
+function closeSettings() {
+    settingsOverlay.classList.remove('active');
+}
+
+if(btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettings);
+if(btnSaveSettings) btnSaveSettings.addEventListener('click', closeSettings);
+
+if(fontSelect) {
+    fontSelect.addEventListener('change', (e) => {
+        const newFont = e.target.value;
+        
+        const currentWpmVal = parseInt(wpmInput.value) || 300;
+        
+        StorageService.saveSettings(currentWpmVal, currentMode, newFont);
+        
+        document.documentElement.style.setProperty('--font-family', fontMap[newFont]);
+    });
+}
+
+if(btnFactoryReset) {
+    btnFactoryReset.addEventListener('click', () => {
+        if(confirm("Are you sure you want to reset all settings to default?")) {
+            isResetting = true;
+            StorageService.clearSettings();
+            location.reload();
+        }
+    });
+}
+
+settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === settingsOverlay) closeSettings();
+});
+
 
 async function checkSavedBook() {
     const meta = await StorageService.getProgress();
@@ -149,7 +217,9 @@ chapterSelect.addEventListener('change', (e) => {
 });
 
 window.addEventListener('beforeunload', () => {
-    saveCurrentState();
+    if (!isResetting) {
+        saveCurrentState();
+    }
 });
 
 EpubBridge.onChapterReady = (htmlContent) => {
@@ -175,9 +245,12 @@ EpubBridge.onChapterReady = (htmlContent) => {
 function saveCurrentState() {
     if (currentMode === 'epub' && EpubBridge.book) {
         const href = chapterSelect.value;
-        
         StorageService.saveProgress(currentBookTitle, currentBookAuthor, href, currentIndex);
     }
+   
+    const currentFont = fontSelect ? fontSelect.value : 'system';
+    const wpm = parseInt(wpmInput.value) || 300;
+    StorageService.saveSettings(wpm, currentMode, currentFont);
 }
 
 btnPrevChapter.addEventListener('click', () => {
