@@ -259,7 +259,7 @@ function loopReader() {
             finalDelay = baseDelay * 3.0;
         }
 
-        if (len > 13) {
+        if (len > 10) {
             finalDelay = finalDelay * 1.4; 
         }
     }

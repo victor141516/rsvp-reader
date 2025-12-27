@@ -101,6 +101,18 @@ function parseHTMLToRSVP(htmlString) {
 function renderWord(wordObj, outputElement) {
     if (!outputElement) return;
 
+    if (!outputElement.hasChildNodes() || outputElement.children.length !== 3) {
+        outputElement.innerHTML = `
+            <div class="part-left"></div>
+            <div class="pivot"></div>
+            <div class="part-right"></div>
+        `;
+    }
+
+    const leftEl = outputElement.children[0];
+    const pivotEl = outputElement.children[1];
+    const rightEl = outputElement.children[2];
+
     const wordText = (typeof wordObj === 'string') ? wordObj : wordObj.text;
 
     const isBreak = (wordObj && wordObj.type === 'break') || (wordText === PARAGRAPH_TOKEN);
@@ -108,8 +120,15 @@ function renderWord(wordObj, outputElement) {
     outputElement.className = 'word-container'; 
 
     if (isBreak) {
-        outputElement.innerHTML = `<div class="part-left"></div><div class="pivot paragraph-symbol">¶</div><div class="part-right"></div>`;
+        leftEl.textContent = "";
+        pivotEl.textContent = "¶";
+        pivotEl.className = "pivot paragraph-symbol";
+        rightEl.textContent = "";
         return;
+    } else {
+        if (pivotEl.classList.contains('paragraph-symbol')) {
+            pivotEl.classList.remove('paragraph-symbol');
+        }
     }
 
     if (typeof wordObj === 'object') {
@@ -140,20 +159,20 @@ function renderWord(wordObj, outputElement) {
     }
 
     const coreLeft = core.slice(0, pivotIdx);
-    const pivotChar = core[pivotIdx];
+    const pivotChar = core[pivotIdx] || "";
     const coreRight = core.slice(pivotIdx + 1);
 
-    const leftHTML = prefix + coreLeft;
-    const pivotHTML = pivotChar || "";
-    const rightHTML = coreRight + suffix;
-    
-    if (len === 0) {
+    if (len === 0 && wordText.length > 0) {
         const mid = Math.floor(wordText.length / 2);
-        outputElement.innerHTML = `<div class="part-left">${wordText.slice(0, mid)}</div><div class="pivot">${wordText[mid]}</div><div class="part-right">${wordText.slice(mid+1)}</div>`;
+        leftEl.textContent = wordText.slice(0, mid);
+        pivotEl.textContent = wordText[mid];
+        rightEl.textContent = wordText.slice(mid+1);
         return;
     }
 
-    outputElement.innerHTML = `<div class="part-left">${leftHTML}</div><div class="pivot">${pivotHTML}</div><div class="part-right">${rightHTML}</div>`;
+    leftEl.textContent = prefix + coreLeft;
+    pivotEl.textContent = pivotChar;
+    rightEl.textContent = coreRight + suffix;
 }
 
 /**
