@@ -133,23 +133,27 @@ function renderWord(wordObj, outputElement) {
     }
 
     const len = core.length;
-    let left = "", piv = "", right = "";
+    let pivotIdx = 0;
     
-    if (len < 2) { 
-        piv = core; 
-    } else if (len % 2 === 0) {
-        const mid2 = len / 2; 
-        left = core.slice(0, mid2 - 1); 
-        piv = core.slice(mid2 - 1, mid2 + 1); 
-        right = core.slice(mid2 + 1);
-    } else {
-        const mid = Math.floor(len / 2); 
-        left = core.slice(0, mid); 
-        piv = core[mid]; 
-        right = core.slice(mid + 1);
+    if (len > 1) {
+        pivotIdx = Math.floor((len - 1) / 2);
     }
+
+    const coreLeft = core.slice(0, pivotIdx);
+    const pivotChar = core[pivotIdx];
+    const coreRight = core.slice(pivotIdx + 1);
+
+    const leftHTML = prefix + coreLeft;
+    const pivotHTML = pivotChar || "";
+    const rightHTML = coreRight + suffix;
     
-    outputElement.innerHTML = `<div class="part-left">${prefix}${left}</div><div class="pivot">${piv}</div><div class="part-right">${right}${suffix}</div>`;
+    if (len === 0) {
+        const mid = Math.floor(wordText.length / 2);
+        outputElement.innerHTML = `<div class="part-left">${wordText.slice(0, mid)}</div><div class="pivot">${wordText[mid]}</div><div class="part-right">${wordText.slice(mid+1)}</div>`;
+        return;
+    }
+
+    outputElement.innerHTML = `<div class="part-left">${leftHTML}</div><div class="pivot">${pivotHTML}</div><div class="part-right">${rightHTML}</div>`;
 }
 
 /**

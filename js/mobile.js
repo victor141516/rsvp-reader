@@ -275,10 +275,18 @@ function loopReader() {
         finalDelay = baseDelay * 4.5;
     } else {
         const text = currentWordObj.text;
+        const len = text.length;
         const lastChar = text.slice(-1);
-        if (',;'.includes(lastChar)) finalDelay = baseDelay * 2.0; 
-        else if ('.?!:”。'.includes(lastChar)) finalDelay = baseDelay * 3.2;
-        else if (text.length > 10) finalDelay = baseDelay * 1.2;
+        
+        if (',;'.includes(lastChar)) {
+            finalDelay = baseDelay * 2.0; 
+        } else if ('.?!:”。'.includes(lastChar)) {
+            finalDelay = baseDelay * 3.2;
+        }
+        
+        if (len > 13) {
+            finalDelay = finalDelay * 1.4;
+        }
     }
 
     currentIndex++;
