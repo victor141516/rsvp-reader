@@ -386,7 +386,9 @@ function loopReader() {
         const lastChar = text.slice(-1);
         if (',;'.includes(lastChar)) finalDelay *= 2.0;
         else if ('.?!:”。'.includes(lastChar)) finalDelay *= 3.0;
-        if (len > 10) finalDelay *= 1.4;
+        
+        if (len > 15) finalDelay = finalDelay * 2.0;
+        else if (len > 10) finalDelay = finalDelay * 1.7;
     }
     currentIndex++;
     timerOut = setTimeout(loopReader, finalDelay);

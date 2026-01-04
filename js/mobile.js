@@ -420,7 +420,8 @@ function loopReader() {
         if (',;'.includes(lastChar)) finalDelay = baseDelay * 2.0;
         else if ('.?!:”。'.includes(lastChar)) finalDelay = baseDelay * 3.0;
         
-        if (len > 10) finalDelay = finalDelay * 1.4;
+        if (len > 15) finalDelay = finalDelay * 2.0;
+        else if (len > 10) finalDelay = finalDelay * 1.7;
     }
 
     currentIndex++;
@@ -512,10 +513,13 @@ readerDisplay.addEventListener('touchend', (e) => {
     } else if (tapCount === 2) {
         if (zone === 'left') skipWords('left');
         else if (zone === 'right') skipWords('right');
-        tapCount = 0;
     } else if (tapCount === 3) {
-        if (zone === 'left') { skipParagraphPrev(); tapCount = 0; }
+        if (zone === 'left') { 
+            skipParagraphPrev(); 
+        }
+        tapCount = 0; 
     }
+    
     e.preventDefault();
 });
 
