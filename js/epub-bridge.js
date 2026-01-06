@@ -1,6 +1,6 @@
 /**
  * FILE: js/epub-bridge.js
- * EPUB Bridge for RSVP Reader - XML/XHTML COMPATIBLE
+ * EPUB Bridge for RSVP Reader
  */
 
 const EpubBridge = {
@@ -33,86 +33,98 @@ const EpubBridge = {
             }
         });
 
-        this.book.loaded.navigation.then((nav) => {
-            this.chapters = [];
-            const traverse = (items) => {
+        Promise.all([
+            this.book.loaded.navigation, 
+            this.book.loaded.spine
+        ]).then(([nav, spine]) => {
+            const tocMap = {};
+            const walkToc = (items) => {
                 items.forEach(item => {
-                    this.chapters.push({
-                        label: (item.label || "Untitled").trim(),
-                        href: item.href
-                    });
-                    if (item.subitems && item.subitems.length > 0) {
-                        traverse(item.subitems);
-                    }
+                    const clean = item.href.split('#')[0];
+                    tocMap[clean] = item.label.trim();
+                    if (item.subitems) walkToc(item.subitems);
                 });
             };
-            
-            if (nav.toc) traverse(nav.toc);
-            
-            if (this.chapters.length === 0) {
-                this.book.spine.each((item) => {
-                    this.chapters.push({
-                         label: "Chapter " + (item.index + 1),
-                         href: item.href
-                    });
-                });
-            }
+            if (nav.toc) walkToc(nav.toc);
+
+            this.chapters = [];
+            let currentGroup = null;
+
+            this.book.spine.each((item) => {
+                const href = item.href;
+                const label = tocMap[href];
+
+                if (label) {
+                    currentGroup = {
+                        label: label,
+                        href: href,
+                        spineHrefs: [href]
+                    };
+                    this.chapters.push(currentGroup);
+                } else {
+                    if (!currentGroup) {
+                        currentGroup = {
+                            label: "Intro / Cover",
+                            href: href,
+                            spineHrefs: []
+                        };
+                        this.chapters.push(currentGroup);
+                    }
+                    currentGroup.spineHrefs.push(href);
+                }
+            });
             
             const event = new CustomEvent('epubChaptersLoaded', { detail: this.chapters });
             document.dispatchEvent(event);
         }).catch(err => {
-            console.error("Error loading navigation:", err);
-            this.chapters = [];
-             this.book.spine.each((item) => {
-                this.chapters.push({ label: "Part " + (item.index + 1), href: item.href });
-            });
-            const event = new CustomEvent('epubChaptersLoaded', { detail: this.chapters });
-            document.dispatchEvent(event);
+            console.error("Error loading structure:", err);
+            alert("Error reading book structure.");
         });
     },
 
-    loadChapter: async function(href) {
+    loadChapter: async function(groupHref) {
         if (!this.book) return;
-        this.currentChapterHref = href;
+        this.currentChapterHref = groupHref;
+
+        const group = this.chapters.find(c => c.href === groupHref);
+        if (!group) {
+            console.error("Chapter group not found:", groupHref);
+            return;
+        }
 
         try {
-            const cleanHref = href.split('#')[0];
-            const item = this.book.spine.get(cleanHref) || this.book.spine.get(href);
-            
-            if(!item) {
-                console.error("Chapter not found:", href);
-                return;
-            }
+            const promises = group.spineHrefs.map(href => this._loadSingleSpineItem(href));
+            const contents = await Promise.all(promises);
 
-            const doc = await item.load(this.book.load.bind(this.book));
-            
-            let content = "";
-            
-            let body = doc.querySelector ? doc.querySelector('body') : null;
-            if (!body && doc.getElementsByTagName) {
-                body = doc.getElementsByTagName('body')[0];
-            }
-
-            if (body) {
-                const serializer = new XMLSerializer();
-                
-                content = Array.from(body.childNodes)
-                    .map(node => serializer.serializeToString(node))
-                    .join('');
-            } else {
-                const serializer = new XMLSerializer();
-                content = serializer.serializeToString(doc.documentElement || doc);
-            }
-
-            item.unload();
+            const fullContent = contents.join(" ");
 
             if (this.onChapterReady) {
-                this.onChapterReady(content || " ");
+                this.onChapterReady(fullContent || " ");
             }
             
         } catch (e) {
-            console.error("Error loading chapter:", e);
-            alert("Error reading chapter structure.");
+            console.error("Error loading merged chapter:", e);
+            alert("Error loading chapter parts.");
+        }
+    },
+
+    _loadSingleSpineItem: async function(href) {
+        const cleanHref = href.split('#')[0];
+        const item = this.book.spine.get(cleanHref);
+        if (!item) return "";
+
+        const doc = await item.load(this.book.load.bind(this.book));
+        
+        let body = doc.querySelector ? doc.querySelector('body') : null;
+        if (!body && doc.getElementsByTagName) {
+            body = doc.getElementsByTagName('body')[0];
+        }
+
+        const serializer = new XMLSerializer();
+        if (body) {
+            return serializer.serializeToString(body);
+        } else {
+            return serializer.serializeToString(doc.documentElement || doc);
         }
     },
 
@@ -120,7 +132,7 @@ const EpubBridge = {
         if (!phrase || phrase.trim().length === 0) return -1;
         
         const rawTokens = phrase.trim().split(/\s+/);
-        
+
         const targetTokens = rawTokens.map(t => 
             t.toLowerCase().replace(/[^\wáéíóúñü]/g, '')
         ).filter(t => t.length > 0);
@@ -139,29 +151,29 @@ const EpubBridge = {
                 let offset = 1;
                 
                 while (tokenIdx < targetTokens.length) {
-                    if ((i + offset) >= wordsArray.length) {
-                        match = false;
-                        break;
+                    if ((i + offset) >= wordsArray.length) { 
+                        match = false; 
+                        break; 
                     }
 
                     const nextWordObj = wordsArray[i + offset];
-                    
-                    if (nextWordObj.type === 'break') {
-                        offset++;
-                        continue;
+
+                    if (nextWordObj.type === 'break') { 
+                        offset++; 
+                        continue; 
                     }
                     
                     const nextBookWord = nextWordObj.text.toLowerCase().replace(/[^\wáéíóúñü]/g, '');
-                    
-                    if (nextBookWord !== targetTokens[tokenIdx]) {
-                        match = false;
-                        break;
+
+                    if (nextBookWord !== targetTokens[tokenIdx]) { 
+                        match = false; 
+                        break; 
                     }
-                    
-                    tokenIdx++;
+
+                    tokenIdx++; 
                     offset++;
                 }
-                
+
                 if (match) {
                     return i;
                 }
