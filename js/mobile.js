@@ -584,7 +584,14 @@ function skipParagraphPrev() {
 }
 
 readerDisplay.addEventListener('touchend', (e) => {
-    if (e.target.closest('#mobile-fs-toolbar') || e.target.tagName === 'BUTTON' || e.target.closest('#context-overlay')) return;
+
+    if (
+        e.target.closest('#mobile-fs-toolbar') || 
+        e.target.tagName === 'BUTTON' || 
+        e.target.closest('#context-overlay') || 
+        e.target.closest('#progress-indicator')
+    ) 
+        return;
 
     const now = Date.now();
     const rect = readerDisplay.getBoundingClientRect();
