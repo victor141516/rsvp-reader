@@ -2,7 +2,7 @@
 
 A lightweight, web-based speed reading tool utilizing the **RSVP** (Rapid Serial Visual Presentation) technique. This project features a dual interface optimized for both desktop and mobile devices, with offline support for `.epub` books.
 
-**[🚀 Try the App Live](https://alegrez.github.io/rsvp-reader/)**
+**[🚀 Try the App Live](https://read.viti.site/rsvp-reader/)**
 
 ## ✨ Key Features
 
