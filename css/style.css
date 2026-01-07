@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&family=Roboto+Mono:wght@300;400;500;700&display=swap');
+
 :root {
     --bg-color: #f4f4f9;
     --box-color: #ffffff;
@@ -8,9 +10,8 @@
     --secondary-color: #264653;
     --overlay-bg: rgba(255, 255, 255, 0.98);
     --font-family: 'Courier New', Courier, monospace;
+    --font-weight: 400;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap');
 
 @font-face {
     font-family: 'OpenDyslexic';
@@ -93,7 +94,7 @@ button:active { transform: scale(0.96); }
 .word-container {
     font-family: var(--font-family);
     font-size: 2.5rem;
-    font-weight: normal;
+    font-weight: var(--font-weight);
     color: #444;
     white-space: pre; 
     display: flex; 

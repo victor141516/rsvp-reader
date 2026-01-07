@@ -1,3 +1,4 @@
+const weightSelect = document.getElementById('weightSelect');
 let words = [];
 let currentIndex = 0;
 let isPlaying = false;
@@ -51,21 +52,76 @@ const libraryList = document.getElementById('library-list');
 const btnUploadFromLib = document.getElementById('btnUploadFromLib');
 const btnLibraryFromControls = document.getElementById('btnLibraryFromControls');
 
-const fontMap = {
-    'classic': "'Courier New', Courier, monospace",
-    'system': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    'opendyslexic': '"OpenDyslexic", "Comic Sans MS", sans-serif',
-    'mono': '"Roboto Mono", monospace',
-    'serif': '"Merriweather", serif'
+const fontConfig = {
+    'classic': { 
+        family: "'Courier New', Courier, monospace", 
+        weights: [400, 700]
+    },
+    'opendyslexic': { 
+        family: '"OpenDyslexic", "Comic Sans MS", sans-serif', 
+        weights: [400, 700]
+    },
+    'system': { 
+        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', 
+        weights: [300, 400, 500, 700]
+    },
+    'mono': { 
+        family: '"Roboto Mono", monospace', 
+        weights: [300, 400, 500, 700]
+    },
+    'serif': { 
+        family: '"Merriweather", serif', 
+        weights: [300, 400, 700, 900]
+    }
 };
 
+const weightLabels = {
+    300: "Light",
+    400: "Normal",
+    500: "Medium",
+    700: "Bold",
+    900: "Black"
+};
+
+function updateWeightDropdown(fontKey, preferredWeight) {
+    if (!weightSelect) return;
+
+    const config = fontConfig[fontKey] || fontConfig['classic'];
+    const validWeights = config.weights;
+
+    weightSelect.innerHTML = '';
+
+    validWeights.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w;
+        opt.textContent = `${weightLabels[w] || w} (${w})`;
+        weightSelect.appendChild(opt);
+    });
+
+    if (validWeights.includes(parseInt(preferredWeight))) {
+        weightSelect.value = preferredWeight;
+    } else if (validWeights.includes(400)) {
+        weightSelect.value = 400;
+    } else {
+        weightSelect.value = validWeights[0];
+    }
+    
+    weightSelect.disabled = validWeights.length < 2;
+}
+
 function applySettings(settings) {
-    const fontKey = settings.font || 'classic'; 
-    const fontFamily = fontMap[fontKey];
-
+    const fontKey = settings.font || 'classic';
+    const savedWeight = settings.fontWeight || '400';
+    
+    updateWeightDropdown(fontKey, savedWeight);
+    
+    const finalWeight = weightSelect ? weightSelect.value : savedWeight;
+    
+    const fontFamily = fontConfig[fontKey].family;
     document.documentElement.style.setProperty('--font-family', fontFamily);
+    document.documentElement.style.setProperty('--font-weight', finalWeight);
 
-    if(fontSelect) fontSelect.value = fontKey;
+    if (fontSelect) fontSelect.value = fontKey;
 }
 
 window.addEventListener('DOMContentLoaded', async () => { 
@@ -230,10 +286,11 @@ function saveCurrentState() {
         const href = chapterSelect.value;
         StorageService.saveProgress(currentBookId, href, currentIndex);
     }
-    
+
     const currentFont = fontSelect ? fontSelect.value : 'classic';
+    const currentWeight = weightSelect ? weightSelect.value : '400';
     const wpm = parseInt(wpmInput.value) || 300;
-    StorageService.saveSettings(wpm, currentMode, currentFont);
+    StorageService.saveSettings(wpm, currentMode, currentFont, currentWeight);
 }
 
 document.addEventListener('epubChaptersLoaded', (e) => {
@@ -295,12 +352,30 @@ if(btnSettings) {
 function closeSettings() { settingsOverlay.classList.remove('active'); }
 if(btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettings);
 if(btnSaveSettings) btnSaveSettings.addEventListener('click', closeSettings);
-if(fontSelect) {
+if (fontSelect) {
     fontSelect.addEventListener('change', (e) => {
         const newFont = e.target.value;
+        const currentWeight = weightSelect ? weightSelect.value : '400';
+        
+        updateWeightDropdown(newFont, currentWeight);
+        
+        const newValidWeight = weightSelect.value;
         const currentWpmVal = parseInt(wpmInput.value) || 300;
-        StorageService.saveSettings(currentWpmVal, currentMode, newFont);
-        document.documentElement.style.setProperty('--font-family', fontMap[newFont]);
+        
+        StorageService.saveSettings(currentWpmVal, currentMode, newFont, newValidWeight);
+        document.documentElement.style.setProperty('--font-family', fontConfig[newFont].family);
+        document.documentElement.style.setProperty('--font-weight', newValidWeight);
+    });
+}
+
+if (weightSelect) {
+    weightSelect.addEventListener('change', (e) => {
+        const newWeight = e.target.value;
+        const currentFont = fontSelect ? fontSelect.value : 'classic';
+        const currentWpmVal = parseInt(wpmInput.value) || 300;
+        
+        StorageService.saveSettings(currentWpmVal, currentMode, currentFont, newWeight);
+        document.documentElement.style.setProperty('--font-weight', newWeight);
     });
 }
 if(btnFactoryReset) {

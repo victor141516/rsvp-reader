@@ -95,8 +95,8 @@ const StorageService = {
     },
 
     
-    saveSettings(wpm, mode, font) {
-        const settings = { wpm, mode, font };
+    saveSettings(wpm, mode, font, fontWeight) {
+        const settings = { wpm, mode, font, fontWeight };
         localStorage.setItem(this.KEY_SETTINGS, JSON.stringify(settings));
     },
 
@@ -106,6 +106,6 @@ const StorageService = {
 
     getSettings() {
         const s = localStorage.getItem(this.KEY_SETTINGS);
-        return s ? JSON.parse(s) : { wpm: 300, mode: 'text', font: 'classic' };
+        return s ? JSON.parse(s) : { wpm: 300, mode: 'text', font: 'classic', fontWeight: '400' };
     }
 };
